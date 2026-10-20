@@ -1,5 +1,8 @@
 import { getAuthUser } from "@/lib/auth";
 import { getSupabase } from "@/lib/firebase";
+import { parseBody } from "@/lib/validation/parse-body";
+import { uploadFormSchema } from "@/lib/validation/schemas/upload";
+
 export const dynamic = "force-dynamic";
 
 const BUCKET = "research-images";
@@ -12,15 +15,14 @@ export async function POST(request: Request) {
 
   try {
     const formData = await request.formData();
-    const files = formData.getAll("files") as File[];
-
-    if (!files.length) {
-      return Response.json({ error: "No files provided" }, { status: 400 });
-    }
-    if (files.length > 10) {
-      return Response.json({ error: "Maximum 10 files allowed" }, { status: 400 });
+    const parsed = parseBody(uploadFormSchema, {
+      files: formData.getAll("files"),
+    });
+    if (!parsed.success) {
+      return Response.json({ error: parsed.error }, { status: 400 });
     }
 
+    const { files } = parsed.data;
     const supabase = getSupabase();
 
     // Ensure bucket exists (idempotent)
@@ -33,19 +35,6 @@ export async function POST(request: Request) {
     const urls: string[] = [];
 
     for (const file of files) {
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        return Response.json(
-          { error: `Invalid file type: ${file.type}` },
-          { status: 400 },
-        );
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        return Response.json(
-          { error: `File too large: ${file.name} (max 5MB)` },
-          { status: 400 },
-        );
-      }
-
       const ext = file.name.split(".").pop() || "png";
       const path = `${auth.userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 

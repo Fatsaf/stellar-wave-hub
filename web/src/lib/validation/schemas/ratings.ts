@@ -21,4 +21,10 @@ export const createRatingSchema = z.object({
   tx_hash: z.string().nullable().optional(),
 });
 
+export const updateRatingSchema = createRatingSchema.partial().extend({
+  id: z.coerce.number().int().positive("id is required"),
+});
+
+export type UpdateRatingInput = z.infer<typeof updateRatingSchema>;
+
 export type CreateRatingInput = z.infer<typeof createRatingSchema>;

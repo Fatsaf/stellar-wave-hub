@@ -1,5 +1,7 @@
 import { getAuthUser, hasMinRole } from "@/lib/auth";
 import { getSupabase } from "@/lib/firebase";
+import { parseJsonBody } from "@/lib/validation/parse-body";
+import { createPromoCodeSchema } from "@/lib/validation/schemas/promo-codes";
 
 export const dynamic = "force-dynamic";
 
@@ -31,21 +33,11 @@ export async function POST(request: Request) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const parsed = await parseJsonBody(request, createPromoCodeSchema);
+  if (!parsed.success) return parsed.response;
+
   try {
-    const body = await request.json();
-    const { code, percent_off, max_uses, expires_at } = body || {};
-
-    if (!code || typeof code !== "string" || !code.trim()) {
-      return Response.json({ error: "Promo code is required" }, { status: 400 });
-    }
-
-    const percentOff = Number(percent_off);
-    if (isNaN(percentOff) || percentOff <= 0 || percentOff > 100) {
-      return Response.json(
-        { error: "percent_off must be between 1 and 100" },
-        { status: 400 }
-      );
-    }
+    const { code, percent_off, max_uses, expires_at } = parsed.data;
 
     const formattedCode = code.trim().toUpperCase();
     const supabase = getSupabase();
@@ -60,19 +52,14 @@ export async function POST(request: Request) {
       return Response.json({ error: "Promo code already exists" }, { status: 400 });
     }
 
-    const parsedMaxUses =
-      max_uses !== null && max_uses !== undefined && max_uses !== ""
-        ? Number(max_uses)
-        : null;
-
-    const parsedExpiresAt =
-      expires_at && typeof expires_at === "string" ? expires_at : null;
+    const parsedMaxUses = max_uses !== null && max_uses !== undefined ? max_uses : null;
+    const parsedExpiresAt = expires_at ? expires_at : null;
 
     const { data, error } = await supabase
       .from("promo_codes")
       .insert({
         code: formattedCode,
-        percent_off: percentOff,
+        percent_off,
         max_uses: parsedMaxUses,
         uses: 0,
         expires_at: parsedExpiresAt,

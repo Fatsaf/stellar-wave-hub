@@ -69,3 +69,10 @@ export async function parseJsonBody<T>(
 
   return { success: true, data: result.data };
 }
+
+export async function parseBody<T>(
+  request: Request,
+  schema: z.ZodType<T>,
+): Promise<ParseResult<T>> {
+  return parseJsonBody(request, schema);
+}
