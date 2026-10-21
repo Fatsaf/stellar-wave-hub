@@ -1,0 +1,18 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "fix/issue-556-zod-validation-on-the-remaining-api-routes",
+    "main",
+    "origin"
+  ],
+  "parent": {
+    "fix/issue-556-zod-validation-on-the-remaining-api-routes": "main",
+    "main": null,
+    "origin": "main"
+  },
+  "order": [
+    "main",
+    "fix/issue-556-zod-validation-on-the-remaining-api-routes",
+    "origin"
+  ]
+}
